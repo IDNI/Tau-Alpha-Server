@@ -8,5 +8,5 @@ include_directories(.)
 add_executable(sendMessage
         json.hpp
         main.cpp
-        TcpClient.cpp
-        TcpClient.h)
+        TcpConnection.cpp
+        TcpConnection.h)

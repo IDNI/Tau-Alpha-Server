@@ -8,7 +8,7 @@
 
 #include <signal.h>
 
-#include "./TcpClient.h"
+#include "TcpConnection.h"
 #include "./UdpClient.h"
 
 using boost::asio::ip::tcp;
@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
 
         std::cout << __FILE__<< " " << __FUNCTION__ << " " << __LINE__ << std::endl;
         UdpClient udpClient(io_context, udpEndpoint,
-                tcpEndpoint); //to fetch a message
+                tcpEndpoint, uid); //to fetch a message
 
         threads.create_thread(
                 boost::bind(&UdpClient::startReceive, &udpClient));
@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
         });
 
 
-        udpClient.ping(argv[3]);
+        udpClient.ping();
 
 
     }

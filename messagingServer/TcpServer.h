@@ -22,47 +22,17 @@ using boost::asio::ip::udp;
 
 class TcpServer {
 public:
-    TcpServer(boost::asio::io_context &io_context, UdpServer &udpServer, Routing &routing,
-              std::unordered_map<size_t, Message *> &messages,
-              uint16_t portNumber)
-            : io_context_(io_context),
-              udpServer_(udpServer),
-              routing_(routing),
-              messages_(messages),
-              acceptor_(io_context, tcp::endpoint(tcp::v4(), portNumber)) {
-        startAccept();
-    }
+    TcpServer(boost::asio::io_context &io_context,MessageOperations &messageOperations,
+              uint16_t portNumber);
 
 private:
-    void startAccept() {
-//        std::cout << "startAccept" << std::endl;
-        TcpConnection::pointer newConnection =
-                TcpConnection::create(io_context_, udpServer_, routing_, messages_);
+    void startAccept();
 
-        acceptor_.async_accept(newConnection->socket(),
-                               boost::bind(&TcpServer::handleAccept,
-                                           this,
-                                           newConnection,
-                                           boost::asio::placeholders::error));
-    }
-
-    void handleAccept(TcpConnection::pointer newConnection,
-                      const boost::system::error_code &error) {
-        if (error) {
-            std::cerr << "handleAccept error " << error << std::endl;
-        } else {
-            std::cerr << "handleAccept accepted " << std::endl;
-            newConnection->start();
-        }
-
-        startAccept();
-    }
+    void handleAccept(TcpConnection::pointer newConnection, const boost::system::error_code &error);
 
     boost::asio::io_context &io_context_;
     tcp::acceptor acceptor_;
-    UdpServer &udpServer_;
-    Routing &routing_;
-    std::unordered_map<size_t, Message *> messages_;
+    MessageOperations &messageOperations_;
 };
 
 

@@ -11,7 +11,7 @@
 
 using boost::asio::ip::tcp;
 
-#include "./TcpClient.h"
+#include "TcpConnection.h"
 
 std::tuple<char*, size_t> loadFileIntoTheMemory(char *fileName) {
     std::ifstream inFile(fileName, std::ios::in | std::ios::binary);
@@ -39,8 +39,8 @@ std::tuple<char*, size_t> loadFileIntoTheMemory(char *fileName) {
     return std::make_tuple(messageBuffer, fileSize);
 }
 
-TcpClient *connectToServer(std::string &server, std::string &port,
-                           boost::asio::io_context &io_context){
+TcpConnection *connectToServer(std::string &server, std::string &port,
+                               boost::asio::io_context &io_context){
 
     tcp::resolver tcpResolver(io_context);
     //adding server endpoint we plan to to connect
@@ -49,7 +49,7 @@ TcpClient *connectToServer(std::string &server, std::string &port,
                                 port);
 
 
-    TcpClient *tcpClient = new TcpClient(io_context);
+    TcpConnection *tcpClient = new TcpConnection(io_context);
 
     try {
         tcpClient->connect(tcpEndpoint);
@@ -77,7 +77,7 @@ std::set<std::string> convertCommaSeparatedStringToSet(char *lineToConvert){
 }
 
 int main(int argc, char **argv) {
-    TcpClient *tcpClient = nullptr;
+    TcpConnection *tcpClient = nullptr;
 
     if(argc < 6) {
         std::cout <<"Usage: "

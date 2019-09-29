@@ -20,40 +20,9 @@ inline void hash_combine(std::size_t &s, const T &v) {
 
 class Routing {
 public:
-    void saveRouteFromUdpEndpoint(udp::endpoint &remote_endpoint, std::string &uid) {
-        uint32_t clientIp = remote_endpoint.address().to_v4().to_uint();
-        uint16_t clientPort = remote_endpoint.port();
-//        std::cout << __FUNCTION__ << " Got socket address " << clientIp << ":" << clientPort << std::endl;
-        ClientIpPort clientIpPort{clientIp, clientPort};
+    bool saveRouteFromUdpEndpoint(udp::endpoint &remote_endpoint, std::string &uid);
 
-        if (addressToClient.find(clientIpPort) == addressToClient.end()) {
-            std::cout << "Socket address " << clientIp << ": " << clientPort
-                      << ": " << uid
-                      << " not found in map"
-                      << std::endl;
-            addressToClient[clientIpPort] = uid;
-            clientToAddress[uid] = remote_endpoint;
-        } else {
-            std::cout << "Socket address " << clientIp << ":" << clientPort
-                      << ": " << uid
-                      << " found in map"
-                      << std::endl;
-        }
-    }
-
-    udp::endpoint getUdpEndpoint(std::string uid) {
-        udp::endpoint destination;
-        try {
-            destination = clientToAddress.at(uid);
-            // std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << std::endl;
-        } catch (...) {
-            // std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << std::endl;
-        }
-//        std::cout << "endpoint ip " << destination.address() << std::endl;
-//        std::cout << "endpoint port " << destination.port() << std::endl;
-//        std::cout << "endpoint protocol " << (destination.protocol() == boost::asio::ip::udp::v4()) << std::endl;
-        return destination;
-    }
+    udp::endpoint getUdpEndpoint(std::string uid);
 
 private:
     struct ClientIpPort {
@@ -65,7 +34,6 @@ private:
                     && port == other.port);
         }
     };
-
 
     struct IpPort_hash_fn {
         std::size_t operator()(ClientIpPort const &clientIpPort) const {
@@ -80,8 +48,6 @@ private:
             IpPort_hash_fn> addressToClient;
 
     std::unordered_map<std::string, udp::endpoint> clientToAddress;
-
-
 };
 
 
