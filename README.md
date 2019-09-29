@@ -3,7 +3,11 @@
 ## Usage for messagingClient is
 
 ```
-./messagingClient SERVERIP SERVERPORT
+./messagingClient SERVERIP SERVERPORT UID
+```
+example
+```
+./messagingClient 127.0.0.1 10000 Ohad
 ```
 
 ## Usage for sendMessage is
