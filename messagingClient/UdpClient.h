@@ -14,16 +14,18 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/asio.hpp>
 
-#include "./json.hpp"
+#include "json.hpp"
 #include "TcpConnection.h"
 
 using boost::asio::ip::udp;
 using json = nlohmann::json;
 
+class MessageOperations;
+
 class UdpClient {
 public:
     UdpClient(boost::asio::io_context &io_context, udp::endpoint &remote_endpoint,
-              tcp::resolver::results_type &tcpEndpoint, std::string uid);
+              tcp::resolver::results_type &tcpEndpoint, std::string uid, MessageOperations &messageOperations);
 
     void ping();
 
@@ -45,6 +47,7 @@ private:
     boost::array<char, 128> recv_buffer_{};
     boost::asio::io_context *io_context_;
     tcp::resolver::results_type &tcpEndpoint_;
+    MessageOperations &messageOperations_;
 
 };
 

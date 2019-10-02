@@ -13,7 +13,7 @@ using boost::asio::ip::tcp;
 
 #include "TcpConnection.h"
 
-std::tuple<char*, size_t> loadFileIntoTheMemory(char *fileName) {
+std::tuple<char *, size_t> loadFileIntoTheMemory(char *fileName) {
     std::ifstream inFile(fileName, std::ios::in | std::ios::binary);
     std::size_t fileSize = 0;
     if (!inFile) {
@@ -28,19 +28,22 @@ std::tuple<char*, size_t> loadFileIntoTheMemory(char *fileName) {
     char *messageBuffer = new char[fileSize];
 
     inFile.read(messageBuffer, fileSize);
-    if (inFile)
+    if (inFile) {
+#ifdef DEBUG_COUT
         std::cout << "Loaded file " << fileName << " into memory:"
-        <<messageBuffer<< " " << inFile.gcount() <<std::endl;
-    else
+                  //                  << std::string(messageBuffer,fileSize)
+                  << " fileSize " << fileSize << std::endl;
+#endif
+    } else {
         std::cerr << "Only " << inFile.gcount() << " could be read" << std::endl;
-
+    }
     inFile.close();
 
     return std::make_tuple(messageBuffer, fileSize);
 }
 
 TcpConnection *connectToServer(std::string &server, std::string &port,
-                               boost::asio::io_context &io_context){
+                               boost::asio::io_context &io_context) {
 
     tcp::resolver tcpResolver(io_context);
     //adding server endpoint we plan to to connect
@@ -65,9 +68,9 @@ TcpConnection *connectToServer(std::string &server, std::string &port,
     return tcpClient;
 }
 
-std::set<std::string> convertCommaSeparatedStringToSet(char *lineToConvert){
+std::set<std::string> convertCommaSeparatedStringToSet(char *lineToConvert) {
     std::set<std::string> parsedString;
-    std::stringstream  ss(lineToConvert);
+    std::stringstream ss(lineToConvert);
     std::string str;
     while (getline(ss, str, ',')) {
         parsedString.insert(str);
@@ -79,11 +82,11 @@ std::set<std::string> convertCommaSeparatedStringToSet(char *lineToConvert){
 int main(int argc, char **argv) {
     TcpConnection *tcpClient = nullptr;
 
-    if(argc < 6) {
-        std::cout <<"Usage: "
-        <<argv[0] << " serverIP serverPort myUID destinationUIDs(comma separated) fileToSend\n"
-        <<"For example:\n"
-        <<argv[0] << " 1.2.3.4 777 Andrei Fola,Isar,Ohad,Tomas ./text.txt\n";
+    if (argc < 6) {
+        std::cout << "Usage: "
+                  << argv[0] << " serverIP serverPort myUID destinationUIDs(comma separated) fileToSend\n"
+                  << "For example:\n"
+                  << argv[0] << " 1.2.3.4 777 Andrei Fola,Isar,Ohad,Tomas ./text.txt\n";
     }
 
     std::string server = argv[1];
@@ -92,7 +95,7 @@ int main(int argc, char **argv) {
 
     std::set<std::string> destinations = convertCommaSeparatedStringToSet(argv[4]);
 
-    auto [messageBuffer, fileSize] = loadFileIntoTheMemory(argv[5]);
+    auto[messageBuffer, fileSize] = loadFileIntoTheMemory(argv[5]);
 
     try {
         //creating io queue for async actions
@@ -101,7 +104,7 @@ int main(int argc, char **argv) {
         //connecting to the desired server
         tcpClient = connectToServer(server, port, io_context);
 
-        if(tcpClient == nullptr) return 0;
+        if (tcpClient == nullptr) return 0;
 
         //sending the message to destinations
         tcpClient->sendMessage(uid, destinations, messageBuffer, fileSize);
@@ -112,7 +115,7 @@ int main(int argc, char **argv) {
         std::cerr << e.what() << std::endl;
     }
 
-    if(tcpClient != nullptr) delete tcpClient;
+    if (tcpClient != nullptr) delete tcpClient;
 
     return 1;
 }

@@ -11,18 +11,20 @@ bool Routing::saveRouteFromUdpEndpoint(udp::endpoint &remote_endpoint, std::stri
     ClientIpPort clientIpPort{clientIp, clientPort};
 
     if (addressToClient.find(clientIpPort) == addressToClient.end()) {
-        std::cout << "Socket address " << clientIp << ": " << clientPort
+        #ifdef DEBUG_COUT
+ std::cout << "Socket address " << clientIp << ": " << clientPort
                   << ": " << uid
                   << " not found in map"
                   << std::endl;
+ #endif
         addressToClient[clientIpPort] = uid;
         clientToAddress[uid] = remote_endpoint;
         return false;
     } else {
-        std::cout << "Socket address " << clientIp << ":" << clientPort
-                  << ": " << uid
-                  << " found in map"
-                  << std::endl;
+//        std::cout << "Socket address " << clientIp << ":" << clientPort
+//                  << ": " << uid
+//                  << " found in map"
+//                  << std::endl;
     }
 
     return true;

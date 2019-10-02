@@ -17,9 +17,9 @@
 #include <boost/asio.hpp>
 #include <boost/scoped_array.hpp>
 
-#include "./json.hpp"
-#include "./UdpServer.h"
-#include "./MessageOperations.h"
+#include "json.hpp"
+#include "UdpServer.h"
+#include "MessageOperations.h"
 
 using json = nlohmann::json;
 
@@ -28,6 +28,7 @@ using boost::asio::ip::tcp;
 class TcpConnection
         : public boost::enable_shared_from_this<TcpConnection> {
 public:
+    ~TcpConnection();
     typedef boost::shared_ptr<TcpConnection> pointer;
 
     static pointer create(boost::asio::io_context &io_context, MessageOperations &messageOperations);
@@ -42,7 +43,11 @@ private:
 
     void executeAction();
 
-    void runGetMessages(std::string recipientName);
+    size_t sendMessageHeader(std::string messagePath);
+
+    size_t sendMessageBody(std::string messagePath);
+
+    void runActionGetMessages(std::string recipientName);
 
     void runSendMessage();
 
@@ -61,8 +66,6 @@ private:
                        std::size_t bytes_transferred);
 
     json actionData;
-
-    std::string recipientName;
 
     boost::system::error_code error;
     tcp::socket socket_;

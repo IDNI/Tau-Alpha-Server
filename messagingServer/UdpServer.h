@@ -15,8 +15,8 @@
 #include <boost/asio.hpp>
 #include <map>
 
-#include "./json.hpp"
-#include "./Routing.h"
+#include "json.hpp"
+#include "Routing.h"
 
 using boost::asio::ip::udp;
 using json = nlohmann::json;

@@ -1,20 +1,19 @@
 #include <iostream>
 #include <string>
 #include <boost/asio.hpp>
-#include <boost/thread.hpp>
+//#include <boost/thread.hpp>
 #include <filesystem>
 
 using boost::asio::ip::tcp;
 using boost::asio::ip::udp;
 
-#include "./Routing.h"
-#include "./TcpServer.h"
-#include "./MessageOperations.h"
-#include "./UdpServer.h"
-
+#include "Routing.h"
+#include "TcpServer.h"
+#include "MessageOperations.h"
+#include "UdpServer.h"
 
 int main(int argc, char **argv) {
-    boost::thread_group threads;
+//    boost::thread_group threads;
     std::filesystem::path dir = "messages";
 
     uint16_t portNumber;
@@ -35,7 +34,6 @@ int main(int argc, char **argv) {
     }
     else {
         std::cout << "Using default directory: " << dir << std::endl;
-        dir = "messages";
     }
 
     try {
@@ -56,7 +54,7 @@ int main(int argc, char **argv) {
         std::cerr << e.what() << std::endl;
     }
 
-    threads.join_all();
+//    threads.join_all();
 
     return 0;
 }

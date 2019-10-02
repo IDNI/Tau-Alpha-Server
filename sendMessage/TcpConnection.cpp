@@ -46,30 +46,18 @@ void TcpConnection::sendMessage(std::string &uid,
 //                  << "sending " << msg.dump() << std::endl;
 
     boost::shared_ptr<std::string> message(
-            new std::string(msg.dump()));
+            new std::string(msg.dump()+"\n"));
 
     // std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " writing " << std::string(msg.dump()) << std::endl;
 
     boost::asio::async_write(socket_,
                              boost::asio::buffer(*message),
-                             boost::bind(&TcpConnection::sendEndOfLine,
-                                         this,
-                                         boost::asio::placeholders::error,
-                                         boost::asio::placeholders::bytes_transferred));
-
-}
-
-void TcpConnection::sendEndOfLine(const boost::system::error_code &error, size_t bytes_transferred) {
-    // std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " writing" << std::endl;
-    boost::asio::async_write(socket_,
-                             boost::asio::buffer("\n"),
-                             boost::asio::transfer_all(),
                              boost::bind(&TcpConnection::handleWrite,
                                          this,
                                          boost::asio::placeholders::error,
                                          boost::asio::placeholders::bytes_transferred));
 
-};
+}
 
 void TcpConnection::handleWrite(const boost::system::error_code &error, size_t bytes_transferred) {
     // std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " written bytes " << bytes_transferred<< std::endl;
@@ -96,10 +84,14 @@ void TcpConnection::handleConfirm(const boost::system::error_code &error,
         std::cerr << __FUNCTION__ << " error " << error.message() << " bytes_transferred " << bytes_transferred
                   << std::endl;
 
-    std::cout << "handleConfirm got: " << confirm << std::endl;
+    #ifdef DEBUG_COUT
+std::cout << "handleConfirm got: " << confirm << std::endl;
+#endif
 
     if (confirm == "Ready for file") {
-        std::cout << "handleConfirm Ready for file" << std::endl;
+        #ifdef DEBUG_COUT
+std::cout << "handleConfirm Ready for file" << std::endl;
+#endif
         sendFile();
     }
 }

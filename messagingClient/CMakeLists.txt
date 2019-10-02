@@ -12,4 +12,13 @@ add_executable(messagingClient
         TcpConnection.cpp
         TcpConnection.h
         UdpClient.cpp
-        UdpClient.h)
+        UdpClient.h
+        MessageOperations.cpp
+        MessageOperations.h MessageOperations.cpp MessageOperations.h)
+
+TARGET_LINK_LIBRARIES( messagingClient
+        boost_system
+        boost_thread
+        pthread
+        stdc++fs
+        )

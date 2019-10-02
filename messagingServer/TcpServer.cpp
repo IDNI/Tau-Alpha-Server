@@ -34,7 +34,9 @@ void TcpServer::handleAccept(TcpConnection::pointer newConnection,
     if (error) {
         std::cerr << "handleAccept error " << error << std::endl;
     } else {
-        std::cerr << "handleAccept accepted " << std::endl;
+#ifdef DEBUG_COUT
+        std::cout << "handleAccept accepted " << std::endl;
+#endif
         newConnection->start();
     }
 

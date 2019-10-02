@@ -14,8 +14,8 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/asio.hpp>
 
-#include "./TcpConnection.h"
-#include "./Routing.h"
+#include "TcpConnection.h"
+#include "Routing.h"
 
 using boost::asio::ip::tcp;
 using boost::asio::ip::udp;

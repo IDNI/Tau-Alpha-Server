@@ -3,11 +3,11 @@
 ## Usage for messagingClient is
 
 ```
-./messagingClient SERVERIP SERVERPORT UID
+./messagingClient SERVERIP SERVERPORT UID [messages directory]
 ```
 example
 ```
-./messagingClient 127.0.0.1 10000 Ohad
+./messagingClient 127.0.0.1 10000 Ohad /myMessages
 ```
 
 ## Usage for sendMessage is

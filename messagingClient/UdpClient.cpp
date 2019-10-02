@@ -5,15 +5,19 @@
 #include "UdpClient.h"
 
 UdpClient::UdpClient(boost::asio::io_context &io_context,
-        udp::endpoint &remote_endpoint,
-        tcp::resolver::results_type &tcpEndpoint,
-        std::string uid)
-: socket_(io_context, udp::endpoint(udp::v4(), 0)),
-remote_endpoint_(remote_endpoint),
-io_context_(&io_context),
-tcpEndpoint_(tcpEndpoint),
-uid_(uid) {
+                     udp::endpoint &remote_endpoint,
+                     tcp::resolver::results_type &tcpEndpoint,
+                     std::string uid,
+                     MessageOperations &messageOperations)
+        : socket_(io_context, udp::endpoint(udp::v4(), 0)),
+          remote_endpoint_(remote_endpoint),
+          io_context_(&io_context),
+          tcpEndpoint_(tcpEndpoint),
+          uid_(uid),
+          messageOperations_(messageOperations) {
+#ifdef DEBUG_COUT
     std::cout << __FILE__ << " io_context::stopped: " << io_context_ << " " << io_context_->stopped() << std::endl;
+#endif
 
 }
 
@@ -45,7 +49,9 @@ void UdpClient::ping() {
 void UdpClient::send(std::string messageString) {
 
     boost::shared_ptr<std::string> message(new std::string(messageString));
+#ifdef DEBUG_COUT
     std::cout << "Sending " << messageString << std::endl;
+#endif
 
     socket_.async_send_to(boost::asio::buffer(*message),
                           remote_endpoint_,
@@ -61,7 +67,9 @@ void UdpClient::send(std::string messageString) {
 }
 
 void UdpClient::startReceive() {
+#ifdef DEBUG_COUT
     std::cout << "startReceive" << std::endl;
+#endif
     socket_.async_receive_from(
             boost::asio::buffer(recv_buffer_), remote_endpoint_,
             boost::bind(&UdpClient::handleReceive, this,
@@ -70,9 +78,8 @@ void UdpClient::startReceive() {
 }
 
 void UdpClient::handleReceive(const boost::system::error_code &error, size_t bytes_transferred) {
-    std::cout << std::endl << "got message: "
-              << std::string(recv_buffer_.begin(), bytes_transferred) << std::endl
-              << std::endl;
+//    std::cout << std::endl << "Got message: "
+//                  << std::string(recv_buffer_.begin(), bytes_transferred) << std::endl;
 
     if (!error) {
         auto message = std::string(recv_buffer_.begin(), bytes_transferred);
@@ -97,7 +104,7 @@ void UdpClient::handleReceive(const boost::system::error_code &error, size_t byt
                 // std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__;
 
                 TcpConnection::pointer newConnection =
-                        TcpConnection::create(*io_context_, uid_);
+                        TcpConnection::create(*io_context_, uid_, messageOperations_);
 
                 try {
                     newConnection->connect(tcpEndpoint_);
@@ -130,9 +137,11 @@ void UdpClient::handleReceive(const boost::system::error_code &error, size_t byt
 }
 
 void UdpClient::handleSend(std::string message,
-                const boost::system::error_code &error,
-                std::size_t bytes_transferred) {
+                           const boost::system::error_code &error,
+                           std::size_t bytes_transferred) {
     i++;
+#ifdef DEBUG_COUT
     std::cout << "async_send_to " << message << " return " << error << ": " <<
-              bytes_transferred << " transmitted " << i << std::endl;//        startReceive();
+                  bytes_transferred << " transmitted " << i << std::endl;//        startReceive();
+#endif
 }
