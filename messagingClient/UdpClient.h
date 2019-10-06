@@ -13,6 +13,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
 
 #include "json.hpp"
 #include "TcpConnection.h"
@@ -24,12 +25,12 @@ class MessageOperations;
 
 class UdpClient {
 public:
-    UdpClient(boost::asio::io_context &io_context, udp::endpoint &remote_endpoint,
+    UdpClient(boost::asio::io_context &io_context,
+              boost::asio::ssl::context &ssl_context,
+              udp::endpoint &remote_endpoint,
               tcp::resolver::results_type &tcpEndpoint, std::string uid, MessageOperations &messageOperations);
 
     void ping();
-
-    void send(std::string messageString);
 
     void startReceive();
 
@@ -45,7 +46,8 @@ private:
     udp::socket socket_;
     udp::endpoint remote_endpoint_;
     boost::array<char, 128> recv_buffer_{};
-    boost::asio::io_context *io_context_;
+    boost::asio::io_context &io_context_;
+    boost::asio::ssl::context &ssl_context_;
     tcp::resolver::results_type &tcpEndpoint_;
     MessageOperations &messageOperations_;
 

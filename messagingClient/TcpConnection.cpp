@@ -4,37 +4,56 @@
 
 #include "TcpConnection.h"
 
-boost::shared_ptr<TcpConnection>
-TcpConnection::create(boost::asio::io_context &io_context, std::string uid, MessageOperations &messageOperations) {
-    return boost::shared_ptr<TcpConnection>(new TcpConnection(io_context, uid, messageOperations));
-}
-
-TcpConnection::TcpConnection(boost::asio::io_context &io_context, std::string uid, MessageOperations &messageOperations)
-        : io_context_(&io_context),
-          socket_(io_context),
+TcpConnection::TcpConnection(
+        boost::asio::io_context &io_context,
+        boost::asio::ssl::context &ssl_context,
+        std::string uid, MessageOperations &messageOperations)
+        : socket_(io_context, ssl_context),
           uid_(uid),
           messageOperations_(messageOperations) {
 
+    socket_.set_verify_mode(boost::asio::ssl::verify_peer);
+    socket_.set_verify_callback(
+            boost::bind(&TcpConnection::verifyCertificate, this, _1, _2));
+}
+
+TcpConnection::~TcpConnection() {
+#ifdef DEBUG_COUT
+    std::cout << __FILE__ << " : " << __FUNCTION__ << " : "
+                 << std::dec << __LINE__ << " : " << "TcpConnection destroyed!" << std::endl;
+#endif
 }
 
 bool TcpConnection::connect(tcp::resolver::results_type &tcpEndpoint) {
-     #ifdef DEBUG_COUT
-std::cout << __FILE__ << " " << __FUNCTION__ << " connecting to "
-                  << tcpEndpoint->host_name()
-                  << ":"
-                  << tcpEndpoint->service_name()
-                  << std::endl;
+#ifdef DEBUG_COUT
+    std::cout << __FILE__ << " " << __FUNCTION__ << " connecting to "
+                      << tcpEndpoint->host_name()
+                      << ":"
+                      << tcpEndpoint->service_name()
+                      << std::endl;
 #endif
+    auto self(shared_from_this());
 
-    boost::asio::connect(
-            socket_,
-            tcpEndpoint);
+    boost::asio::async_connect(
+            socket_.lowest_layer(),
+            tcpEndpoint,
+            [this, self](const boost::system::error_code &error,
+                   const tcp::endpoint & /*endpoint*/) {
+                if (!error) {
+                    socket_.handshake(boost::asio::ssl::stream_base::client);
+                    getMessages();
+                } else {
+                    std::cerr << "Connect failed: " << error.message() << "\n";
+                }
+            });
+
+
     return true;
 }
 
 bool TcpConnection::requestUnreadMessages(boost::system::error_code &ec) {
-    #ifdef DEBUG_COUT
-std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << std::endl;
+#ifdef DEBUG_COUT
+    std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << std::endl;
 #endif
     json msg;
     msg["action"] = "Get messages";
@@ -49,10 +68,10 @@ std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << std::endl;
     return true;
 }
 
-std::tuple<json,size_t,size_t> TcpConnection::readHeader(boost::system::error_code &ec){
+std::tuple<json, size_t, size_t> TcpConnection::readHeader(boost::system::error_code &ec) {
     json messageHeader;
-    #ifdef DEBUG_COUT
-std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << std::endl;
+#ifdef DEBUG_COUT
+    std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << std::endl;
 #endif
     size_t messageHeaderSize = boost::asio::read_until(socket_, inbuf, '\n', ec);
 
@@ -61,14 +80,14 @@ std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << std::endl;
                   " " << ec << std::endl;
     }
 
-    #ifdef DEBUG_COUT
-std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " "
-              << "got HEADER size " << messageHeaderSize << std::endl;
+#ifdef DEBUG_COUT
+    std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " "
+                  << "got HEADER size " << messageHeaderSize << std::endl;
 #endif
 
     if (messageHeaderSize == 0) {
-        #ifdef DEBUG_COUT
-std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << std::endl;
+#ifdef DEBUG_COUT
+        std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << std::endl;
 #endif
         return std::make_tuple(messageHeader, 0, 0);
     }
@@ -77,7 +96,7 @@ std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << std::endl;
             boost::asio::buffers_begin(inbuf.data()),
             boost::asio::buffers_begin(inbuf.data()) + messageHeaderSize);
 
-    #ifdef DEBUG_COUT
+#ifdef DEBUG_COUT
     std::cout << messageHeaderString << std::endl;
 std::cout << "----------------HEADER-----------------------" << std::endl;
 #endif
@@ -98,8 +117,8 @@ std::cout << "----------------HEADER-----------------------" << std::endl;
 }
 
 size_t TcpConnection::readMessage(boost::system::error_code &ec, size_t messageSize) {
-    #ifdef DEBUG_COUT
-std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << std::endl;
+#ifdef DEBUG_COUT
+    std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << std::endl;
 #endif
     size_t bytes_transferred = boost::asio::read(socket_, inbuf, boost::asio::transfer_exactly(messageSize), ec);
     if (ec && ec != boost::asio::error::eof) {
@@ -107,30 +126,30 @@ std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << std::endl;
                   " " << ec << std::endl;
     }
 
-    #ifdef DEBUG_COUT
-std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " "
-              << "got message size " << bytes_transferred << std::endl;
+#ifdef DEBUG_COUT
+    std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " "
+                  << "got message size " << bytes_transferred << std::endl;
 #endif
 
     return bytes_transferred;
 }
 
 bool TcpConnection::getMessages() {
-    #ifdef DEBUG_COUT
-std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << std::endl;
+#ifdef DEBUG_COUT
+    std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << std::endl;
 #endif
     boost::system::error_code ec;
 
-    if(!requestUnreadMessages(ec)){
+    if (!requestUnreadMessages(ec)) {
         std::cerr << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ <<
                   " " << ec << std::endl;
         return false;
     }
 
     while (ec != boost::asio::error::eof) {
-        auto [messageHeader, messageHeaderSize, messageSize] = readHeader(ec);
+        auto[messageHeader, messageHeaderSize, messageSize] = readHeader(ec);
 
-        if(!messageHeaderSize || !messageSize) {
+        if (!messageHeaderSize || !messageSize) {
             std::cerr << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ <<
                       " " << ec << std::endl;
             break;
@@ -138,24 +157,34 @@ std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << std::endl;
 
         readMessage(ec, messageSize);
 
-        #ifdef DEBUG_COUT
-std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__
-        << " " << "total transferred " << messageSize
-        << " + " << messageHeaderSize <<
-        " = " << messageHeaderSize + messageSize << std::endl;
+#ifdef DEBUG_COUT
+        std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__
+                << " " << "total transferred " << messageSize
+                << " + " << messageHeaderSize <<
+                " = " << messageHeaderSize + messageSize << std::endl;
 #endif
 
         messageOperations_.save(messageHeader, inputStream, messageSize);
 
-//        inbuf.consume(messageSize);
     }
 
     return true;
 }
 
-TcpConnection::~TcpConnection() {
-    #ifdef DEBUG_COUT
-std::cout << __FILE__ << " : " << __FUNCTION__ << " : "
-              << std::dec << __LINE__ << " : " << "TcpConnection destroyed!" << std::endl;
-#endif
+bool TcpConnection::verifyCertificate(bool &preverified,
+                                      boost::asio::ssl::verify_context &ctx) {
+    // The verify callback can be used to check whether the certificate that is
+    // being presented is valid for the peer. For example, RFC 2818 describes
+    // the steps involved in doing this for HTTPS. Consult the OpenSSL
+    // documentation for more details. Note that the callback is called once
+    // for each certificate in the certificate chain, starting from the root
+    // certificate authority.
+
+    // In this example we will simply print the certificate's subject name.
+    char subject_name[256];
+    X509 *cert = X509_STORE_CTX_get_current_cert(ctx.native_handle());
+    X509_NAME_oneline(X509_get_subject_name(cert), subject_name, 256);
+    std::cout << "Verifying " << subject_name << "\n";
+
+    return preverified;
 }

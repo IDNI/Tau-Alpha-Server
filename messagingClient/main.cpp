@@ -4,7 +4,7 @@
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
 #include <boost/asio/connect.hpp>
-#include <fstream>      // std::ifstream
+#include <boost/asio/ssl.hpp>
 #include <filesystem>
 
 #include <signal.h>
@@ -14,12 +14,6 @@
 
 using boost::asio::ip::tcp;
 using boost::asio::ip::udp;
-
-std::string make_daytime_string() {
-    using namespace std; // For time_t, time and ctime;
-    time_t now = time(0);
-    return ctime(&now);
-}
 
 int main(int argc, char **argv) {
     std::filesystem::path dir = "messages";
@@ -54,18 +48,20 @@ int main(int argc, char **argv) {
         //creating io queue
         boost::asio::io_context io_context;
 
+        boost::asio::ssl::context ctx(boost::asio::ssl::context::sslv23);
+
+        ctx.load_verify_file("ca.pem");
+
         tcp::resolver tcpResolver(io_context);
         udp::resolver udpResolver(io_context);
         //adding server endpoint we plan to to connect
-//        tcp::resolver::results_type
         tcp::resolver::results_type tcpEndpoint = tcpResolver.resolve(server,
                                                                       port);
         udp::endpoint udpEndpoint = *udpResolver.resolve(server,
                                                          port).begin();
 
 
-//        std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << std::endl;
-        UdpClient udpClient(io_context, udpEndpoint,
+        UdpClient udpClient(io_context, ctx, udpEndpoint,
                             tcpEndpoint,
                             uid,
                             messageOperations); //to fetch a message
@@ -74,7 +70,6 @@ int main(int argc, char **argv) {
                 boost::bind(&UdpClient::startReceive, &udpClient));
 
         threads.create_thread([&]() {
-//            std::cout << __FILE__ << " io_context starting " << &io_context << std::endl;
             boost::asio::executor_work_guard<decltype(io_context.get_executor())>
                     work{io_context.get_executor()};
             io_context.run();

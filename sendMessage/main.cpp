@@ -4,7 +4,6 @@
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
 #include <boost/asio/connect.hpp>
-#include <sstream>
 #include <fstream>      // std::ifstream
 #include <tuple>
 #include <signal.h>
@@ -43,7 +42,8 @@ std::tuple<char *, size_t> loadFileIntoTheMemory(char *fileName) {
 }
 
 TcpConnection *connectToServer(std::string &server, std::string &port,
-                               boost::asio::io_context &io_context) {
+                               boost::asio::io_context &io_context,
+                               boost::asio::ssl::context &ctx) {
 
     tcp::resolver tcpResolver(io_context);
     //adding server endpoint we plan to to connect
@@ -52,7 +52,7 @@ TcpConnection *connectToServer(std::string &server, std::string &port,
                                 port);
 
 
-    TcpConnection *tcpClient = new TcpConnection(io_context);
+    TcpConnection *tcpClient = new TcpConnection(io_context,ctx);
 
     try {
         tcpClient->connect(tcpEndpoint);
@@ -101,8 +101,11 @@ int main(int argc, char **argv) {
         //creating io queue for async actions
         boost::asio::io_context io_context;
 
+        boost::asio::ssl::context ctx(boost::asio::ssl::context::sslv23);
+        ctx.load_verify_file("ca.pem");
+
         //connecting to the desired server
-        tcpClient = connectToServer(server, port, io_context);
+        tcpClient = connectToServer(server, port, io_context, ctx);
 
         if (tcpClient == nullptr) return 0;
 

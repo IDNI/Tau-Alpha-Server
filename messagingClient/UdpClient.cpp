@@ -5,13 +5,15 @@
 #include "UdpClient.h"
 
 UdpClient::UdpClient(boost::asio::io_context &io_context,
+                     boost::asio::ssl::context &ssl_context,
                      udp::endpoint &remote_endpoint,
                      tcp::resolver::results_type &tcpEndpoint,
                      std::string uid,
                      MessageOperations &messageOperations)
         : socket_(io_context, udp::endpoint(udp::v4(), 0)),
           remote_endpoint_(remote_endpoint),
-          io_context_(&io_context),
+          io_context_(io_context),
+          ssl_context_(ssl_context),
           tcpEndpoint_(tcpEndpoint),
           uid_(uid),
           messageOperations_(messageOperations) {
@@ -44,26 +46,6 @@ void UdpClient::ping() {
                                       boost::asio::placeholders::bytes_transferred));
     sleep(5);
     ping();
-}
-
-void UdpClient::send(std::string messageString) {
-
-    boost::shared_ptr<std::string> message(new std::string(messageString));
-#ifdef DEBUG_COUT
-    std::cout << "Sending " << messageString << std::endl;
-#endif
-
-    socket_.async_send_to(boost::asio::buffer(*message),
-                          remote_endpoint_,
-                          boost::bind(&UdpClient::handleSend,
-                                      this,
-                                      messageString,
-                                      boost::asio::placeholders::error,
-                                      boost::asio::placeholders::bytes_transferred));
-    // std::cout << __FILE__ << " " << __FUNCTION__ << "io_context::stopped: "
-//                  << io_context_ << " " << io_context_->stopped()
-//                  << std::endl;
-    startReceive();
 }
 
 void UdpClient::startReceive() {
@@ -101,13 +83,16 @@ void UdpClient::handleReceive(const boost::system::error_code &error, size_t byt
 
             if ("Got messages" == actionData["action"].get<std::string>()) {
                 //there's a message waiting for us on the server
-                // std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__;
-
-                TcpConnection::pointer newConnection =
-                        TcpConnection::create(*io_context_, uid_, messageOperations_);
+                //so we must connect to it and go further
+                auto tcpConnection =
+                        std::make_shared<TcpConnection>
+                                (io_context_,
+                                 ssl_context_,
+                                 uid_,
+                                 messageOperations_);
 
                 try {
-                    newConnection->connect(tcpEndpoint_);
+                    tcpConnection->connect(tcpEndpoint_);
                 } catch (boost::system::system_error &e) {
                     if (e.code() == boost::asio::error::not_found)
                         std::cerr << "connect returned not_found" << std::endl;
@@ -115,9 +100,6 @@ void UdpClient::handleReceive(const boost::system::error_code &error, size_t byt
                         std::cerr << "connect returned error " << e.code() << std::endl;
                 }
 
-//                auto messageId = actionData["messageId"].get<size_t>();
-
-                newConnection->getMessages();
             }
         }
 

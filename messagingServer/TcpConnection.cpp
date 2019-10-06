@@ -4,16 +4,35 @@
 
 #include "TcpConnection.h"
 
-boost::shared_ptr<TcpConnection>
-TcpConnection::create(boost::asio::io_context &io_context, MessageOperations &messageOperations) {
-    return pointer(new TcpConnection(io_context, messageOperations));
+TcpConnection::TcpConnection(tcp::socket socket,
+        boost::asio::ssl::context &ssl_context,
+                             MessageOperations &messageOperations)
+        : socket_(std::move(socket), ssl_context),
+          messageOperations_(messageOperations) {
 }
 
-tcp::socket &TcpConnection::socket() {
-    return socket_;
-}
 
 void TcpConnection::start() {
+#ifdef DEBUG_COUT
+    std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " handshaking SSL" << std::endl;
+#endif
+
+    std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << std::endl;
+    auto self(shared_from_this());
+    std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << std::endl;
+
+    socket_.async_handshake(boost::asio::ssl::stream_base::server,
+                            [this, self](const boost::system::error_code &error) {
+                                if (!error) {
+                                    doRead();
+                                } else {
+                                    std::cerr << "SSL ha    ndshake error " << error << std::endl;
+                                }
+
+                            });
+}
+
+void TcpConnection::doRead() {
 #ifdef DEBUG_COUT
     std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " waiting for command" << std::endl;
 #endif
@@ -27,12 +46,6 @@ void TcpConnection::start() {
                                               boost::asio::placeholders::error,
                                               boost::asio::placeholders::bytes_transferred));
 }
-
-TcpConnection::TcpConnection(boost::asio::io_context &io_context, MessageOperations &messageOperations)
-        : socket_(io_context),
-          messageOperations_(messageOperations) {
-}
-
 
 boost::system::error_code error;
 
@@ -143,7 +156,7 @@ void TcpConnection::runActionGetMessages(std::string recipientName) {
 #ifdef DEBUG_COUT
     std::cout << __FILE__ << " " << __FUNCTION__ << " " << __LINE__ << " END sending" << std::endl;
 #endif
-    socket_.close();
+    socket_.shutdown();
 }
 
 void TcpConnection::runSendMessage() {

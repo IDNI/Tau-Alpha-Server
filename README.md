@@ -3,6 +3,7 @@
 ## To build
 You need boost 1.68+ and cmake 3.14+
 For ubuntu installation looks like:
+
 Boost
 ```
 sudo add-apt-repository ppa:mhier/libboost-latest

@@ -14,6 +14,7 @@
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
 
 #include "./json.hpp"
 
@@ -22,13 +23,12 @@ using json = nlohmann::json;
 
 class TcpConnection {
 public:
-    TcpConnection(boost::asio::io_context &io_context);
+    TcpConnection(boost::asio::io_context &io_context,
+                  boost::asio::ssl::context& ssl_context);
+
+    ~TcpConnection();
 
     bool connect(tcp::resolver::results_type &tcpEndpoint);
-
-    typedef boost::shared_ptr<TcpConnection> pointer;
-
-    static pointer create(boost::asio::io_context &io_context);
 
     void sendMessage(std::string &uid,
                      std::set<std::string> const &destinations,
@@ -50,11 +50,12 @@ private:
     void handleMessageSent(const boost::system::error_code &error,
                            std::size_t bytes_transferred);
 
+    bool verifyCertificate(bool &preverified, boost::asio::ssl::verify_context& ctx);
 
     boost::asio::streambuf inbuf;
     std::istream is{&inbuf};
 
-    tcp::socket socket_;
+    boost::asio::ssl::stream<tcp::socket> socket_;
     boost::asio::io_context *io_context_;
 };
 

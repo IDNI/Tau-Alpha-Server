@@ -11,6 +11,8 @@ add_executable(messagingServer
 TARGET_LINK_LIBRARIES(messagingServer
         boost_system
         boost_thread
+        ssl
+        crypto
         pthread
         stdc++fs
         )

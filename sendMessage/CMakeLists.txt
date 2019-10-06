@@ -15,4 +15,6 @@ add_executable(sendMessage
 
 TARGET_LINK_LIBRARIES(sendMessage
         boost_system
+        ssl
+        crypto
         )

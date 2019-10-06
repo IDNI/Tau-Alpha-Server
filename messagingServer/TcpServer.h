@@ -13,6 +13,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
 
 #include "TcpConnection.h"
 #include "Routing.h"
@@ -28,9 +29,10 @@ public:
 private:
     void startAccept();
 
-    void handleAccept(TcpConnection::pointer newConnection, const boost::system::error_code &error);
+    std::string getPassword() const;
 
     boost::asio::io_context &io_context_;
+    boost::asio::ssl::context context_;
     tcp::acceptor acceptor_;
     MessageOperations &messageOperations_;
 };
